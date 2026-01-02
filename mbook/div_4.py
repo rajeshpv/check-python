@@ -10,13 +10,23 @@ def _():
     from pylib import fns
 
     get_err_msg, set_err_msg = mo.state(None)
-    return fns, get_err_msg, mo, set_err_msg
+    return fns, mo, set_err_msg
 
 
 @app.cell
-def _(get_err_msg, mo, set_err_msg):
+def _(mo, set_err_msg):
     # common functions
     from functools import wraps
+    from typing import Any, Callable, Tuple
+
+    def capture_exception(func: Callable[..., Any]):
+        @wraps(func)
+        def wrapper(*args, **kwargs) -> Tuple[Any | None, Exception | None]:
+            try:
+                return func(*args, **kwargs), None
+            except Exception as e:
+                return None, mo.callout(str(e), kind="danger")
+        return wrapper
 
     def common_exception_handler(exc, func, args, kwargs):
         _emsg = f"Error in function: {func.__name__} Exception: {exc}"
@@ -37,32 +47,22 @@ def _(get_err_msg, mo, set_err_msg):
             return wrapper
         return decorator
 
-    # display error msg and stop further execution
-    has_err_msg = get_err_msg()
-    if has_err_msg:
-      out = mo.callout(has_err_msg, kind="danger")
-      set_err_msg(None)
-      mo.stop(has_err_msg, out)
-    return (handle_error,)
+    return (capture_exception,)
 
 
 @app.cell
-def _(fns, handle_error, num1, num2):
-
-
+def _(capture_exception, fns, num1, num2):
     # logic functions
-    @handle_error(default="0")
-    def calc_wrap() -> float:
+    @capture_exception
+    def calc_wrap() -> str:
       a = float(num1.value)
       b = float(num2.value)  
       return  str(fns.divide(a,b))
-
     return (calc_wrap,)
 
 
 @app.cell
 def _(mo):
-
     num1 = mo.ui.text(label="Number 1: ", value="")
     num2 = mo.ui.text(label="Number 2: ", value="")
     calc_btn = mo.ui.run_button(label="÷")
@@ -73,9 +73,11 @@ def _(mo):
 
 @app.cell
 def _(calc_btn, calc_wrap, mo):
-    result = calc_wrap() if calc_btn.value else ""
-
-    mo.ui.text(label="Result", value=result, disabled=True).style({"width":"800px"})
+    out = None
+    if calc_btn.value:
+      result, error = calc_wrap()
+      out = error if error else  mo.ui.text(label="Result", value=result, disabled=True).style({"width":"800px"})
+    out
     return
 
 

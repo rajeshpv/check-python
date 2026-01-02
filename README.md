@@ -24,7 +24,12 @@ uv run marimo run mbook/div_3.py
 ## Help needed
 * If anyone has a better way to handle error, please share.
 * And is above method correct? or fragile? :) 
-
+## Steps to reproduce error
+* launch `uv run marimo run mbook/div_3.py`
+* enter valid values 10,2 and click on ÷ button, you get valid result 5
+* enter invalid values 10,0 and click on ÷ button, you get error message "Error: division by zero" and execution stops.
+* (click refresh browser) to start over,enter valid values 10,3 and click on ÷ button, you get valid result 3.333
+  
 ## Question.2
 * On Seperate note:, I wanted to render result in same cell liek num1 and num2 are rendered.
 * Which I tried in div_2.py
